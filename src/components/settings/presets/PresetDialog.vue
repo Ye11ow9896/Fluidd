@@ -1,0 +1,156 @@
+<template>
+  <v-dialog
+    v-model="open"
+    :max-width="500"
+  >
+    <v-form
+      ref="form"
+      v-model="valid"
+      @submit.prevent="handleSave"
+    >
+      <v-card>
+        <v-card-title class="card-heading py-2">
+          <span class="focus--text">{{ (preset.id != -1) ? $t('app.general.label.edit_preset') : $t('app.general.label.add_preset') }}</span>
+        </v-card-title>
+
+        <app-setting :title="$t('app.setting.label.thermal_preset_name')">
+          <v-text-field
+            v-model="preset.name"
+            :rules="[
+              $rules.required
+            ]"
+            hide-details="auto"
+            filled
+            dense
+          />
+        </app-setting>
+
+        <v-divider />
+
+        <template
+          v-for="(item, i) in heaters"
+        >
+          <app-setting
+            :key="`${i}heater`"
+            :title="item.name"
+          >
+            <v-checkbox
+              v-model="preset.values[item.name].active"
+              hide-details
+              class="ma-0"
+            />
+
+            <v-text-field
+              v-model.number="preset.values[item.name].value"
+              :rules="[
+                $rules.required,
+                $rules.numberValid,
+                $rules.numberGreaterThan(0)
+              ]"
+              hide-details="auto"
+              type="number"
+              suffix="°C"
+              class="mb-2"
+              outlined
+              dense
+            />
+          </app-setting>
+
+          <v-divider :key="i + 'heaterd'" />
+        </template>
+
+        <template
+          v-for="(item, i) in fans"
+        >
+          <app-setting
+            :key="`${i}fan`"
+            :title="item.name"
+          >
+            <v-checkbox
+              v-model="preset.values[item.name].active"
+              hide-details
+              class="ma-0"
+            />
+
+            <v-text-field
+              v-model.number="preset.values[item.name].value"
+              :rules="[
+                $rules.required,
+                $rules.numberValid,
+                $rules.numberGreaterThan(0)
+              ]"
+              hide-details="auto"
+              type="number"
+              suffix="°C"
+              class="mb-2"
+              outlined
+              dense
+            />
+          </app-setting>
+
+          <v-divider :key="i + 'fand'" />
+        </template>
+
+        <app-setting :title="$t('app.setting.label.thermal_preset_gcode')">
+          <v-textarea
+            v-model="preset.gcode"
+            rows="2"
+            hide-details="auto"
+            class="mb-2"
+            outlined
+          />
+        </app-setting>
+
+        <v-card-actions>
+          <v-spacer />
+          <app-btn
+            color="warning"
+            text
+            type="button"
+            @click="open = false"
+          >
+            {{ $t('app.general.btn.cancel') }}
+          </app-btn>
+          <app-btn
+            color="primary"
+            type="submit"
+          >
+            {{ (preset.id !== -1) ? $t('app.general.btn.save') : $t('app.general.btn.add') }}
+          </app-btn>
+        </v-card-actions>
+      </v-card>
+    </v-form>
+  </v-dialog>
+</template>
+
+<script lang="ts">
+import { Component, Vue, Prop, VModel } from 'vue-property-decorator'
+import { TemperaturePreset } from '@/store/config/types'
+import { Fan, Heater } from '@/store/printer/types'
+
+@Component({})
+export default class TemperaturePresetDialog extends Vue {
+  @VModel({ type: Boolean, required: true })
+    open!: boolean
+
+  @Prop({ type: Object, required: true })
+  readonly preset!: TemperaturePreset
+
+  valid = false
+
+  get heaters (): Heater[] {
+    return this.$store.getters['printer/getHeaters']
+  }
+
+  get fans (): Fan[] {
+    return this.$store.getters['printer/getOutputs'](['temperature_fan'])
+  }
+
+  handleSave () {
+    if (this.valid) {
+      this.$emit('save', this.preset)
+      this.open = false
+    }
+  }
+}
+</script>
